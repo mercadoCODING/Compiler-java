@@ -1,12 +1,37 @@
 package compiler;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import components.Lexer;
 import components.Parser;
 import components.Token;
-import java.util.Scanner;
-public class CodewareCompiler {
-    Scanner scanner = new Scanner(System.in);
-    String input = scanner.nextLine();
+import modules.Statement;
 
-    Lexer lexer = new Lexer(input);
-    Parser parser = new Parser(lexer);
+
+public class CodewareCompiler {
+
+    //call sa main class para mag run
+    public CodewareCompiler(String code){
+        List<Token> tokens = getTokens(code);
+        Parser parser = new Parser(tokens);
+        List<Statement> statements = parser.parse();
+
+
+        Map<String, Object> symbolTable = new HashMap<>();
+
+
+        for (Statement stmt : statements) {
+            stmt.execute(symbolTable);
+        }
+    }
+
+    //input taker
+
+    //kaya mag declaration tapos basic arithmetic data type is NUMBER and WORD
+    private static List<Token> getTokens(String code) {
+        Lexer lexer = new Lexer();
+        return lexer.tokenize(code);
+    }
+
 }

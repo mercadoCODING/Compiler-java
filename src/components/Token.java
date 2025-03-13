@@ -1,12 +1,24 @@
 package components;
 
 public class Token {
-    enum Type {NUMBER,WORD,PLUS,MINUS,MULTIPLY,DIVIDE,EOF}
-    Type type;
+    public enum TokenType {
+        NUMBER, WORD, LOOP, IF, ELSE,
+        IDENTIFIER, NUMBER_LITERAL, WORD_LITERAL,
+        OPERATOR, DELIMITER, UNKNOWN , ASSIGN,SEMICOLON,
+    }
+    TokenType type;
     String value;
-
-    Token(Type type, String value){
+    Token(TokenType type, String value){
         this.type = type;
         this.value = value;
     }
+
+    public TokenType getType() {
+        return type;
+    }
+
+    public String getValue(){
+        return value;
+    }
+
 }

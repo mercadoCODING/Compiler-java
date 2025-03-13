@@ -1,44 +1,64 @@
 package components;
 
 
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+//handle tokenization
 public class Lexer {
 
-    private final String input;
-    private int pos;
+    //symbol table
+    private static final Map<String, Token.TokenType> keywords = Map.of(
+            "NUMBER", Token.TokenType.NUMBER,
+            "WORD", Token.TokenType.WORD,
+            "LOOP", Token.TokenType.LOOP,
+            "IF", Token.TokenType.IF,
+            "ELSE", Token.TokenType.ELSE
+    );
 
-    public Lexer(String input) {
-        this.input = input.replaceAll("\s+", "");
-    }
 
-    Token getNextToken() {
-        if (pos >= input.length()) return new Token(Token.Type.EOF, "");
+    private static final Pattern tokenPatterns = Pattern.compile(
+            "\\b(NUMBER|WORD|LOOP|IF|ELSE)\\b|" +       // Keywords
+                    "[a-zA-Z_][a-zA-Z0-9_]*|" +         // Identifiers
+                    "\\d+(\\.\\d+)?|" +                 // Numbers
+                    "\"[^\"]*\"|" +                     // Strings
+                    "[=+\\-*/;]"                        // Operators & Delimiters
+    );
 
-        char current = input.charAt(pos);
-        if (Character.isDigit(current)) {
-            StringBuilder number = new StringBuilder();
-            while (pos < input.length() && Character.isDigit(input.charAt(pos))) {
-                number.append(input.charAt(pos++));
+
+    public List<Token> tokenize(String code) {
+        List<Token> tokens = new ArrayList<>();
+        Matcher matcher = tokenPatterns.matcher(code);
+
+        while (matcher.find()) {
+            String match = matcher.group();
+
+            if (keywords.containsKey(match)) {
+                tokens.add(new Token(keywords.get(match), match));
+            } else if (match.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                tokens.add(new Token(Token.TokenType.IDENTIFIER, match));
+            } else if (match.matches("\\d+(\\.\\d+)?")) {
+                tokens.add(new Token(Token.TokenType.NUMBER_LITERAL, match));
+            } else if (match.matches("\"[^\"]*\"")) {
+                tokens.add(new Token(Token.TokenType.WORD_LITERAL, match));
+            } else if (match.equals("=")) {
+                tokens.add(new Token(Token.TokenType.ASSIGN, match));
+            } else if (match.equals(";")) {
+                tokens.add(new Token(Token.TokenType.SEMICOLON, match));
+            } else if (match.matches("[+\\-*/]")) {
+                tokens.add(new Token(Token.TokenType.OPERATOR, match));
+            } else {
+                tokens.add(new Token(Token.TokenType.UNKNOWN, match));
             }
-            return new Token(Token.Type.NUMBER, number.toString());
-        } else if (current == '"') {
-            pos++; // Skip opening quote
-            StringBuilder str = new StringBuilder();
-            while (pos < input.length() && input.charAt(pos) != '"') {
-                str.append(input.charAt(pos++));
-            }
-            pos++; // Skip closing quote
-            return new Token(Token.Type.WORD, str.toString());
         }
 
-        pos++;
-        return switch (current) {
-            case '+' -> new Token(Token.Type.PLUS, "+");
-            case '-' -> new Token(Token.Type.MINUS, "-");
-            case '*' -> new Token(Token.Type.MULTIPLY, "*");
-            case '/' -> new Token(Token.Type.DIVIDE, "/");
-            default -> throw new RuntimeException("Unknown character: " + current);
-        };
+        return tokens;
     }
+
+
+
+
 }
 
 

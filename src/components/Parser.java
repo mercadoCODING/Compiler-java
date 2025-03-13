@@ -1,86 +1,104 @@
 package components;
 
+import AST.*;
+import modules.Expression;
+import modules.Statement;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class Parser {
-    private final Lexer lexer;
-    private Token currentToken;
+    private List<Token> tokens;
+    private int current = 0;
 
-    public Parser(Lexer lexer) {
-        this.lexer = lexer;
-        this.currentToken = lexer.getNextToken();
+    public Parser(List<Token> tokens) {
+        this.tokens = tokens;
     }
 
-    private void eat(Token.Type type) {
-        if (currentToken.type == type) {
-            currentToken = lexer.getNextToken();
+    // Parse all tokens into a list of statements.
+    public List<Statement> parse() {
+        List<Statement> statements = new ArrayList<>();
+        while (current < tokens.size()) {
+            statements.add(parseStatement());
+        }
+        return statements;
+    }
+
+
+    private Statement parseStatement() {
+
+        if (current < tokens.size() &&
+                (tokens.get(current).getType() == Token.TokenType.NUMBER ||
+                        tokens.get(current).getType() == Token.TokenType.WORD)) {
+
+            Token typeToken = tokens.get(current++);
+            Token varToken = consume(Token.TokenType.IDENTIFIER, "Expected variable name after type");
+            consume(Token.TokenType.ASSIGN, "Expected '=' after variable name");
+            Expression expr = parseExpression();
+            consume(Token.TokenType.SEMICOLON, "Expected ';' after declaration");
+            return new DeclarationStatement(varToken.getValue(), expr);
         } else {
-            throw new RuntimeException("Syntax error");
+            // Otherwise, treat it as an expression statement.
+            Expression expr = parseExpression();
+            consume(Token.TokenType.SEMICOLON, "Expected ';' after expression");
+            return new ExpressionStatement(expr);
         }
     }
 
-    // Evaluates NUMBER expressions
-    public int exprAsNumber() {
-        return evaluateNumberExpr();
-    }
-
-    // Evaluates WORD expressions
-    public String exprAsWord() {
-        return evaluateWordExpr();
-    }
-
-    // Arithmetic logic for NUMBERS
-    private int evaluateNumberExpr() {
-        int result = Integer.parseInt(term());
-        while (currentToken.type == Token.Type.PLUS || currentToken.type == Token.Type.MINUS ) {
-            if (currentToken.type == Token.Type.PLUS) {
-                eat(Token.Type.PLUS);
-                result += Integer.parseInt(term());
-            } else {
-                eat(Token.Type.MINUS);
-                result -= Integer.parseInt(term());
-            }
+    // Parse expressions for addition and subtraction.
+    private Expression parseExpression() {
+        Expression expr = parseTerm();
+        while (current < tokens.size() &&
+                tokens.get(current).getType() == Token.TokenType.OPERATOR &&
+                (tokens.get(current).getValue().equals("+") || tokens.get(current).getValue().equals("-"))) {
+            Token op = tokens.get(current++);
+            Expression right = parseTerm();
+            expr = new ArtihmeticExpression(expr,right, op.getValue());
         }
-        return result;
+        return expr;
     }
 
-    // String concatenation logic for WORDS
-    private String evaluateWordExpr() {
-        StringBuilder result = new StringBuilder(factor());
-        while (currentToken.type == Token.Type.PLUS) {
-            eat(Token.Type.PLUS);
-            result.append(factor());
+    // Parse terms for multiplication and division.
+    private Expression parseTerm() {
+        Expression expr = parseFactor();
+        while (current < tokens.size() &&
+                tokens.get(current).getType() == Token.TokenType.OPERATOR &&
+                (tokens.get(current).getValue().equals("*") || tokens.get(current).getValue().equals("/"))) {
+            Token op = tokens.get(current++);
+            Expression right = parseFactor();
+            expr = new ArtihmeticExpression(expr, right, op.getValue());
         }
-        return result.toString();
+        return expr;
     }
 
-
-    private String term() {
-        int result = Integer.parseInt(factor()); // Start with a NUMBER
-        while (currentToken.type == Token.Type.MULTIPLY || currentToken.type == Token.Type.DIVIDE) {
-            if (currentToken.type == Token.Type.MULTIPLY) {
-                eat(Token.Type.MULTIPLY);
-                result *= Integer.parseInt(factor());
-            } else {
-                eat(Token.Type.DIVIDE);
-                int divisor = Integer.parseInt(factor());
-                if (divisor == 0) {
-                    throw new ArithmeticException("Division by zero error");
-                }
-                result /= divisor;
-            }
+    // Parse a factor: number literal, string literal, or identifier.
+    private Expression parseFactor() {
+        Token token = tokens.get(current);
+        if (match(Token.TokenType.NUMBER_LITERAL)) {
+            return new NumberLiteral(Double.parseDouble(token.getValue()));
+        } else if (match(Token.TokenType.WORD_LITERAL)) {
+            return new StringLiteral(token.getValue());
+        } else if (match(Token.TokenType.IDENTIFIER)) {
+            return new VariableReference(token.getValue());
         }
-        return String.valueOf(result);
+        throw new RuntimeException("Expected number, string, or identifier, found: " + token.getValue());
     }
 
-    // Handles individual tokens (NUMBER or WORD)
-    private String factor() {
-        Token token = currentToken;
-        if (token.type == Token.Type.NUMBER) {
-            eat(Token.Type.NUMBER);
-            return token.value;
-        } else if (token.type == Token.Type.WORD) {
-            eat(Token.Type.WORD);
-            return token.value;
+    // Helper: if the current token matches the expected type, advance.
+    private boolean match(Token.TokenType type) {
+        if (current < tokens.size() && tokens.get(current).getType() == type) {
+            current++;
+            return true;
         }
-        throw new RuntimeException("Invalid factor");
+        return false;
+    }
+
+    // Helper: ensure the current token is of the expected type.
+    private Token consume(Token.TokenType type, String errorMessage) {
+        if (current < tokens.size() && tokens.get(current).getType() == type) {
+            return tokens.get(current++);
+        }
+        throw new RuntimeException(errorMessage + " at token " +
+                (current < tokens.size() ? tokens.get(current).getValue() : "EOF"));
     }
 }
