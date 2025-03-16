@@ -11,6 +11,10 @@ public class VariableReference implements Expression {
         this.varName = varName;
     }
 
+    public String getName() {
+        return varName;
+    }
+
     @Override
     public Object evaluate(Map<String, Object> symbolTable) {
         if(symbolTable.containsKey(varName)){

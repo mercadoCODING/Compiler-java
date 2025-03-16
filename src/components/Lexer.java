@@ -14,16 +14,18 @@ public class Lexer {
             "WORD", Token.TokenType.WORD,
             "LOOP", Token.TokenType.LOOP,
             "IF", Token.TokenType.IF,
-            "ELSE", Token.TokenType.ELSE
+            "ELSE", Token.TokenType.ELSE,
+            "TO",Token.TokenType.TO,
+            "BREAK",Token.TokenType.BREAK
     );
 
 
     private static final Pattern tokenPatterns = Pattern.compile(
-            "\\b(NUMBER|WORD|LOOP|IF|ELSE)\\b|" +       // Keywords
+            "\\b(NUMBER|WORD|LOOP|IF|ELSE|TO|BREAK)\\b|" +       // Keywords
                     "[a-zA-Z_][a-zA-Z0-9_]*|" +         // Identifiers
                     "\\d+(\\.\\d+)?|" +                 // Numbers
                     "\"[^\"]*\"|" +                     // Strings
-                    "[=+\\-*/;]"                        // Operators & Delimiters
+                    "[=+\\-*/;{}]"                        // Operators & Delimiters
     );
 
 
@@ -48,7 +50,11 @@ public class Lexer {
                 tokens.add(new Token(Token.TokenType.SEMICOLON, match));
             } else if (match.matches("[+\\-*/]")) {
                 tokens.add(new Token(Token.TokenType.OPERATOR, match));
-            } else {
+            } else if (match.equals("{")){
+                tokens.add(new Token(Token.TokenType.LEFT_BRACE, match));
+            }else if(match.equals("}")){
+                tokens.add(new Token(Token.TokenType.RIGHT_BRACE, match));
+            }else{
                 tokens.add(new Token(Token.TokenType.UNKNOWN, match));
             }
         }

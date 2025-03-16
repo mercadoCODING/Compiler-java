@@ -4,7 +4,7 @@ public class Token {
     public enum TokenType {
         NUMBER, WORD, LOOP, IF, ELSE,
         IDENTIFIER, NUMBER_LITERAL, WORD_LITERAL,
-        OPERATOR, DELIMITER, UNKNOWN , ASSIGN,SEMICOLON,
+        OPERATOR, UNKNOWN , ASSIGN,SEMICOLON,RIGHT_BRACE,LEFT_BRACE,TO,BREAK
     }
     TokenType type;
     String value;

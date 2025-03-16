@@ -24,16 +24,16 @@ public class ArtihmeticExpression implements Expression {
         Object rightVal = right.evaluate(symbolTable);
 
         if(operator.equals("+")){
-            //check if num if num add if str concatenate
+
             if(leftVal instanceof Number && rightVal instanceof Number){
-                return ((Number) leftVal).doubleValue() + ((Number) rightVal).doubleValue();
+                return ((Number) leftVal).intValue() + ((Number) rightVal).intValue();
             } else {
                 return leftVal.toString() + rightVal.toString();
             }
         }
         if(leftVal instanceof Integer && rightVal instanceof Integer){
-            double l = (Integer) leftVal;
-            double r = (Integer) rightVal;
+            int l = (Integer) leftVal;
+            int r = (Integer) rightVal;
             switch (operator){
                 case "-":
                     return l - r;

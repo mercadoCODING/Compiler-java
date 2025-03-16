@@ -16,6 +16,7 @@ public class ExpressionStatement implements Statement {
     @Override
     public void execute(Map<String, Object> symbolTable) {
         Object result = expression.evaluate(symbolTable);
-        System.out.println("Result: " + result);
+        //pang log testing
+        //System.out.println("Result: " + result);
     }
 }

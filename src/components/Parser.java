@@ -27,23 +27,80 @@ public class Parser {
 
     private Statement parseStatement() {
 
+        if(current < tokens.size() && tokens.get(current).getType() == Token.TokenType.LOOP){
+            consume(Token.TokenType.LOOP, "Expected 'LOOP' keyword");
+            Expression startCondition = parseExpression();
+
+            consume(Token.TokenType.TO, "Expected 'TO' in loop condition");
+            Expression endCondition = parseExpression();
+
+
+            consume(Token.TokenType.LEFT_BRACE, "Expected '{' before loop body");
+
+            List<Statement> bodyStatements = new ArrayList<>();
+            while (current < tokens.size() && tokens.get(current).getType() != Token.TokenType.RIGHT_BRACE) {
+                if (tokens.get(current).getType() == Token.TokenType.BREAK) {
+                    consume(Token.TokenType.BREAK, "Expected 'BREAK' keyword");
+                    bodyStatements.add(new BreakStatement());
+                } else {
+                    bodyStatements.add(parseStatement());
+                }
+            }
+            consume(Token.TokenType.RIGHT_BRACE, "Expected '}' after loop body");
+            return new LoopStatement(startCondition, endCondition, bodyStatements);
+        }
+
         if (current < tokens.size() &&
                 (tokens.get(current).getType() == Token.TokenType.NUMBER ||
                         tokens.get(current).getType() == Token.TokenType.WORD)) {
 
             Token typeToken = tokens.get(current++);
             Token varToken = consume(Token.TokenType.IDENTIFIER, "Expected variable name after type");
-            consume(Token.TokenType.ASSIGN, "Expected '=' after variable name");
-            Expression expr = parseExpression();
+
+            Expression expr;
+            if (current < tokens.size() && tokens.get(current).getType() == Token.TokenType.ASSIGN) {
+                consume(Token.TokenType.ASSIGN, "Expected '=' after variable name");
+                expr = parseExpression();
+            } else {
+                // Default initializer based on type keyword.
+                if (typeToken.getType() == Token.TokenType.NUMBER) {
+                    expr = new NumberLiteral(0);
+                } else if (typeToken.getType() == Token.TokenType.WORD) {
+                    expr = new StringLiteral("\"\"");
+                } else {
+                    expr = new NumberLiteral(0);
+                }
+            }
             consume(Token.TokenType.SEMICOLON, "Expected ';' after declaration");
             return new DeclarationStatement(varToken.getValue(), expr);
         } else {
-            // Otherwise, treat it as an expression statement.
-            Expression expr = parseExpression();
+            Expression expr = parseAssignment();
             consume(Token.TokenType.SEMICOLON, "Expected ';' after expression");
             return new ExpressionStatement(expr);
         }
     }
+
+
+
+
+    private Expression parseAssignment() {
+        Expression expr = parseExpression();
+        if (current < tokens.size() && tokens.get(current).getType() == Token.TokenType.ASSIGN) {
+
+            if (!(expr instanceof VariableReference)) {
+                throw new RuntimeException("Invalid assignment target at token " +
+                        (current < tokens.size() ? tokens.get(current).getValue() : "EOF"));
+            }
+
+            consume(Token.TokenType.ASSIGN, "Expected '=' after variable");
+
+            Expression value = parseAssignment();
+
+            return new AssignmentExpression(((VariableReference) expr).getName(), value);
+        }
+        return expr;
+    }
+
 
     // Parse expressions for addition and subtraction.
     private Expression parseExpression() {
@@ -75,7 +132,7 @@ public class Parser {
     private Expression parseFactor() {
         Token token = tokens.get(current);
         if (match(Token.TokenType.NUMBER_LITERAL)) {
-            return new NumberLiteral(Double.parseDouble(token.getValue()));
+            return new NumberLiteral(Integer.parseInt(token.getValue()));
         } else if (match(Token.TokenType.WORD_LITERAL)) {
             return new StringLiteral(token.getValue());
         } else if (match(Token.TokenType.IDENTIFIER)) {
