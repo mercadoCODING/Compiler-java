@@ -14,14 +14,6 @@ public class AssignmentExpression implements Expression {
         this.value = value;
     }
 
-    public String getVariableName() {
-        return variableName;
-    }
-
-    public Expression getValue() {
-        return value;
-    }
-
     @Override
     public Object evaluate(Map<String, Object> symbolTable) {
         Object evaluatedValue = value.evaluate(symbolTable);

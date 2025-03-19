@@ -12,7 +12,7 @@ public class VariableReference implements Expression {
     }
 
     public String getName() {
-        return varName;
+        return varName  ;
     }
 
     @Override

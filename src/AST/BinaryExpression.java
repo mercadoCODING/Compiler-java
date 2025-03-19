@@ -4,12 +4,12 @@ import modules.Expression;
 
 import java.util.Map;
 
-public class ArtihmeticExpression implements Expression {
+public class BinaryExpression implements Expression {
     private final Expression left;
     private final Expression right;
     private final String operator;
 
-    public ArtihmeticExpression(Expression left, Expression right, String operator){
+    public BinaryExpression(Expression left, Expression right, String operator){
         this.left = left;
         this.right = right;
         this.operator = operator;
@@ -31,6 +31,7 @@ public class ArtihmeticExpression implements Expression {
                 return leftVal.toString() + rightVal.toString();
             }
         }
+
         if(leftVal instanceof Integer && rightVal instanceof Integer){
             int l = (Integer) leftVal;
             int r = (Integer) rightVal;
@@ -46,6 +47,28 @@ public class ArtihmeticExpression implements Expression {
                     return  l/r;
             }
         }
+
+        switch (operator) {
+            case "==" -> {
+                return leftVal.equals(rightVal);
+            }
+            case "!=" -> {
+                return !leftVal.equals(rightVal);
+            }
+            case "<" -> {
+                return ((Number) leftVal).intValue() < ((Number) rightVal).intValue();
+            }
+            case ">" -> {
+                return ((Number) leftVal).intValue() > ((Number) rightVal).intValue();
+            }
+            case "<=" -> {
+                return ((Number) leftVal).intValue() <= ((Number) rightVal).intValue();
+            }
+            case ">=" -> {
+                return ((Number) leftVal).intValue() >= ((Number) rightVal).intValue();
+            }
+        }
+
 
         throw new RuntimeException("Unsupported operand types for operator " + operator + ": " +
                 leftVal.getClass() + " and " + rightVal.getClass());

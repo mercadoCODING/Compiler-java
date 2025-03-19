@@ -28,20 +28,32 @@ public class LoopStatement implements Statement {
         int start = (Integer) startValue;
         int end = (Integer) endValue;
 
+
+        if (!(startCondition instanceof VariableReference)) {
+            throw new RuntimeException("Invalid loop variable reference in LOOP statement.");
+        }
+        String loopVariable = ((VariableReference) startCondition).getName();
+
+
+        if (!symbolTable.containsKey(loopVariable)) {
+            symbolTable.put(loopVariable, start);
+        }
+
+
         if (start <= end) {
-            // Incrementing loop
-            for (int i = start; i <= end; i++) {
+
+            while ((int) symbolTable.get(loopVariable) <= end) {
                 if (executeBody(symbolTable)) return;
             }
         } else {
-            // Decrementing loop
-            for (int i = start; i >= end; i--) {
+            // Decrementing loop: again, rely on loop body update.
+            while ((int) symbolTable.get(loopVariable) >= end) {
                 if (executeBody(symbolTable)) return;
             }
         }
     }
 
-    // Executes the loop body and handles 'BREAK' statements
+
     private boolean executeBody(Map<String, Object> symbolTable) {
         for (Statement statement : body) {
             if (statement instanceof BreakStatement) {
