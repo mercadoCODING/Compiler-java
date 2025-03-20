@@ -1,5 +1,6 @@
 package AST;
 
+import gui.CompilerGUI;
 import modules.Expression;
 import modules.Statement;
 
@@ -23,6 +24,6 @@ public class PrintStatement implements Statement {
             result = symbolTable.get(variableName);
         }
 
-        System.out.println(result);
+        CompilerGUI.appendOutput(String.valueOf(result));
     }
 }
