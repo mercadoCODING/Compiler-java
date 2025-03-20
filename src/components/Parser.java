@@ -1,9 +1,8 @@
 package components;
 
 import AST.*;
-import modules.ElseIfBlock;
+import AST.ElseIfBlock;
 import modules.Expression;
-import modules.FunctionCall;
 import modules.Statement;
 
 import java.util.ArrayList;
@@ -20,6 +19,7 @@ public class Parser {
     //core parser
     public List<Statement> parse() {
         List<Statement> statements = new ArrayList<>();
+        current = 0;
         while (current < tokens.size()) {
             statements.add(parseStatement());
         }
@@ -28,6 +28,35 @@ public class Parser {
 
  //parser for statements
     private Statement parseStatement() {
+
+        if (match(Token.TokenType.RETURN)) {
+            Expression returnValue = null;
+
+
+            if (current < tokens.size() && tokens.get(current).getType() != Token.TokenType.SEMICOLON) {
+                returnValue = parseExpression();
+            }
+
+            consume(Token.TokenType.SEMICOLON, "Expected ';' after RETURN statement");
+
+            return new ReturnStatement(returnValue);
+        }
+
+
+        if(tokens.get(current).getType() == Token.TokenType.FUNC){
+            //System.out.println("FUNC detected at position: " + current);
+            return parseFunctionDeclaration();
+        }
+
+        if (current < tokens.size()
+                && tokens.get(current).getType() == Token.TokenType.IDENTIFIER
+                && current + 1 < tokens.size()
+                && tokens.get(current + 1).getType() == Token.TokenType.LEFT_PAREN) {
+            FunctionCallExpression callExpr = parseFunctionCallExpression();
+            consume(Token.TokenType.SEMICOLON, "Expected ';' after function call");
+            return new FunctionCallStatement(callExpr);
+        }
+
 
         if (match(Token.TokenType.PRINT)) {
             Expression value;
@@ -49,13 +78,6 @@ public class Parser {
             consume(Token.TokenType.RIGHT_PAREN, "Expected ')' after variable name");
             consume(Token.TokenType.SEMICOLON, "Expected ';' after INPUT statement");
             return new InputStatement(variable.getValue());
-        }
-
-
-
-        if (current < tokens.size() && tokens.get(current).getType() == Token.TokenType.FUNC) {
-            consume(Token.TokenType.FUNC, "Expected 'FUNC' keyword");
-            return parseFunctionDeclaration();
         }
 
         if(current < tokens.size() && tokens.get(current).getType() == Token.TokenType.LOOP){
@@ -156,9 +178,7 @@ public class Parser {
         }
     }
 
-
-
-    private InputExpression getInputExpression(){
+    /*private InputExpression getInputExpression(){
         if (match(Token.TokenType.INPUT)) {
             consume(Token.TokenType.LEFT_PAREN, "Expected '(' after INPUT");
 
@@ -169,7 +189,7 @@ public class Parser {
             return new InputExpression(promptToken.getValue());
         }
         return null;
-    }
+    }*/
 
 
 
@@ -250,18 +270,35 @@ public class Parser {
     // Parse Literals
     private Expression parseFactor() {
         Token token = tokens.get(current);
+
         if (match(Token.TokenType.NUMBER_LITERAL)) {
             return new NumberLiteral(Integer.parseInt(token.getValue()));
         } else if (match(Token.TokenType.WORD_LITERAL)) {
             return new StringLiteral(token.getValue());
         } else if (match(Token.TokenType.IDENTIFIER)) {
-            return new VariableReference(token.getValue());
+            String id = token.getValue();
+            if (current < tokens.size() && tokens.get(current).getType() == Token.TokenType.LEFT_PAREN) {
+                //handle nested fnction
+
+                consume(Token.TokenType.LEFT_PAREN, "Expected '(' in function call");
+                List<Expression> arguments = new ArrayList<>();
+                if (current < tokens.size() && tokens.get(current).getType() != Token.TokenType.RIGHT_PAREN) {
+                    do {
+                        arguments.add(parseExpression());
+                    } while (match(Token.TokenType.COMMA));
+                }
+                consume(Token.TokenType.RIGHT_PAREN, "Expected ')' in function call");
+                return new FunctionCallExpression(id, arguments);
+            }
+
+            return new VariableReference(id);
         }
         throw new RuntimeException("Expected number, string, or identifier, found: " + token.getValue());
     }
 
+
     //Parse Functions here
-    private Statement parseFunctionDeclaration() {
+    private FunctionDeclaration parseFunctionDeclaration() {
         consume(Token.TokenType.FUNC, "Expected 'FUNC' keyword.");
         String functionName = consume(Token.TokenType.IDENTIFIER, "Expected function name.").getValue();
         consume(Token.TokenType.LEFT_PAREN, "Expected '(' after function name.");
@@ -270,6 +307,9 @@ public class Parser {
 
         if (current < tokens.size() && tokens.get(current).getType() != Token.TokenType.RIGHT_PAREN) {
             do {
+                if (tokens.get(current).getType() == Token.TokenType.NUMBER || tokens.get(current).getType() == Token.TokenType.WORD) {
+                    consume(tokens.get(current).getType(), "Expected type token");
+                }
                 parameters.add(consume(Token.TokenType.IDENTIFIER, "Expected parameter name").getValue());
             } while (match(Token.TokenType.COMMA));
         }
@@ -279,7 +319,12 @@ public class Parser {
         List<Statement> body = new ArrayList<>();
 
         while (current < tokens.size() && tokens.get(current).getType() != Token.TokenType.RIGHT_BRACE) {
-            body.add(parseStatement());
+            if (tokens.get(current).getType() == Token.TokenType.RETURN) {
+                body.add(parseStatement());
+                break;
+            }else{
+                body.add(parseStatement());
+            }
         }
 
         consume(Token.TokenType.RIGHT_BRACE, "Expected '}' after function body");
@@ -287,8 +332,8 @@ public class Parser {
         return new FunctionDeclaration(functionName, parameters, body);
     }
 
-    private Statement parseFunctionCall() {
-        String functionName = consume(Token.TokenType.IDENTIFIER, "Expected function name.").getValue();
+    private FunctionCallExpression parseFunctionCallExpression() {
+        String functionName = consume(Token.TokenType.IDENTIFIER, "Expected function name").getValue();
         consume(Token.TokenType.LEFT_PAREN, "Expected '(' in function call");
         List<Expression> arguments = new ArrayList<>();
         if (current < tokens.size() && tokens.get(current).getType() != Token.TokenType.RIGHT_PAREN) {
@@ -297,9 +342,11 @@ public class Parser {
             } while (match(Token.TokenType.COMMA));
         }
         consume(Token.TokenType.RIGHT_PAREN, "Expected ')' in function call");
-        return new FunctionCall(functionName, arguments);
+        return new FunctionCallExpression(functionName, arguments);
     }
 
+
+    //helper function para easy process
     private boolean match(Token.TokenType type) {
         if (current < tokens.size() && tokens.get(current).getType() == type) {
             current++;

@@ -28,7 +28,7 @@ public class CodewareCompiler {
 
     //input taker
 
-    //kaya mag declaration tapos basic arithmetic data type is NUMBER and WORD
+    //Completed for more verification paki test nalang QA
     private static List<Token> getTokens(String code) {
         Lexer lexer = new Lexer();
         return lexer.tokenize(code);

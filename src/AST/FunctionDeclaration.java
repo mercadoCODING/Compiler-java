@@ -2,8 +2,11 @@ package AST;
 
 import modules.Statement;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import util.ReturnException;
+
 
 public class FunctionDeclaration implements Statement {
 
@@ -17,38 +20,32 @@ public class FunctionDeclaration implements Statement {
         this.body = body;
     }
 
-    public String getFunctionName() {
-        return functionName;
-    }
-
-    public List<String> getParameters() {
-        return parameters;
-    }
-
-    public List<Statement> getBody() {
-        return body;
-    }
 
     @Override
     public void execute(Map<String, Object> symbolTable) {
         symbolTable.put(functionName,this);
     }
 
-    public void invoke(Map<String, Object> symbolTable, List<Object> args) {
+    public Object invoke(Map<String, Object> symbolTable, List<Object> args) {
         if (args.size() != parameters.size()) {
             throw new RuntimeException("Argument count mismatch for function " + functionName);
         }
 
-        Map<String, Object> localScope = new java.util.HashMap<>(symbolTable);
+        Map<String, Object> localScope = new HashMap<>(symbolTable);
 
-        // Assign arguments to parameters
         for (int i = 0; i < parameters.size(); i++) {
             localScope.put(parameters.get(i), args.get(i));
         }
 
-
-        for (Statement statement : body) {
-            statement.execute(localScope);
+        try {
+            for (Statement statement : body) {
+                statement.execute(localScope);
+            }
+        } catch (ReturnException returnException) {
+            return returnException.getReturnValue();
         }
+
+
+        return null;
     }
 }

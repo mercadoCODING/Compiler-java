@@ -1,4 +1,7 @@
-package modules;
+package AST;
+
+import modules.Expression;
+import modules.Statement;
 
 import java.util.List;
 
