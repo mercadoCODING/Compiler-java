@@ -23,12 +23,18 @@ public class IfStatement implements Statement {
     @Override
     public void execute(Map<String, Object> symbolTable) {
         Object condValue = condition.evaluate(symbolTable);
+        boolean conditionResult;
 
-        if(!(condValue instanceof Boolean)){
-            throw new RuntimeException("Condition in IF statement must evaluate to a boolean.");
+        if (condValue instanceof Boolean) {
+            conditionResult = (Boolean) condValue;
+        } else if (condValue instanceof Number) {
+
+            conditionResult = ((Number) condValue).doubleValue() != 0;
+        } else {
+            throw new RuntimeException("Condition in IF statement must evaluate to a boolean or number.");
         }
 
-        if ((Boolean) condValue) {
+        if (conditionResult) {
             for (Statement stmt : thenBranch) {
                 stmt.execute(symbolTable);
             }
@@ -37,7 +43,15 @@ public class IfStatement implements Statement {
 
         for (ElseIfBlock elseIf : elseIfBranches) {
             Object elseIfCondition = elseIf.getCondition().evaluate(symbolTable);
-            if (elseIfCondition instanceof Boolean && (Boolean) elseIfCondition) {
+            boolean elseIfResult;
+            if (elseIfCondition instanceof Boolean) {
+                elseIfResult = (Boolean) elseIfCondition;
+            } else if (elseIfCondition instanceof Number) {
+                elseIfResult = ((Number) elseIfCondition).doubleValue() != 0;
+            } else {
+                throw new RuntimeException("Condition in ELSE IF statement must evaluate to a boolean or number.");
+            }
+            if (elseIfResult) {
                 for (Statement stmt : elseIf.getBranch()) {
                     stmt.execute(symbolTable);
                 }
@@ -51,4 +65,5 @@ public class IfStatement implements Statement {
             }
         }
     }
+
 }
