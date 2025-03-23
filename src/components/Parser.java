@@ -26,6 +26,23 @@ public class Parser {
         return statements;
     }
 
+    //helper method para easy process
+    private boolean match(Token.TokenType type) {
+        if (current < tokens.size() && tokens.get(current).getType() == type) {
+            current++;
+            return true;
+        }
+        return false;
+    }
+
+    private Token consume(Token.TokenType type, String errorMessage) {
+        if (current < tokens.size() && tokens.get(current).getType() == type) {
+            return tokens.get(current++);
+        }
+        throw new RuntimeException(errorMessage + " at token " +
+                (current < tokens.size() ? tokens.get(current).getValue() : "EOF"));
+    }
+
  //parser for statements
     private Statement parseStatement() {
 
@@ -80,13 +97,19 @@ public class Parser {
             return new InputStatement(variable.getValue());
         }
 
-        if(current < tokens.size() && tokens.get(current).getType() == Token.TokenType.LOOP){
+        if (current < tokens.size() && tokens.get(current).getType() == Token.TokenType.LOOP) {
             consume(Token.TokenType.LOOP, "Expected 'LOOP' keyword");
-            Expression startCondition = parseExpression();
+
+            Expression startCondition;
+            if (match(Token.TokenType.NUMBER_LITERAL)) {
+                startCondition = new NumberLiteral(Integer.parseInt(tokens.get(current - 1).getValue()));
+            } else {
+                startCondition = parseExpression();
+            }
 
             consume(Token.TokenType.TO, "Expected 'TO' in loop condition");
-            Expression endCondition = parseExpression();
 
+            Expression endCondition = parseExpression();
 
             consume(Token.TokenType.LEFT_BRACE, "Expected '{' before loop body");
 
@@ -99,9 +122,12 @@ public class Parser {
                     bodyStatements.add(parseStatement());
                 }
             }
+
             consume(Token.TokenType.RIGHT_BRACE, "Expected '}' after loop body");
+
             return new LoopStatement(startCondition, endCondition, bodyStatements);
         }
+
 
 
         if (current < tokens.size() && tokens.get(current).getType() == Token.TokenType.IF) {
@@ -346,20 +372,5 @@ public class Parser {
     }
 
 
-    //helper function para easy process
-    private boolean match(Token.TokenType type) {
-        if (current < tokens.size() && tokens.get(current).getType() == type) {
-            current++;
-            return true;
-        }
-        return false;
-    }
 
-    private Token consume(Token.TokenType type, String errorMessage) {
-        if (current < tokens.size() && tokens.get(current).getType() == type) {
-            return tokens.get(current++);
-        }
-        throw new RuntimeException(errorMessage + " at token " +
-                (current < tokens.size() ? tokens.get(current).getValue() : "EOF"));
-    }
 }
